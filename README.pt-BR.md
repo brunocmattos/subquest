@@ -18,7 +18,7 @@
 </p>
 
 <p align="center">
-  <img src="https://img.shields.io/badge/vers%C3%A3o-1.0.0-D97757?style=for-the-badge" alt="Versão 1.0.0">
+  <img src="https://img.shields.io/badge/vers%C3%A3o-1.1.0-D97757?style=for-the-badge" alt="Versão 1.1.0">
   <a href="LICENSE"><img src="https://img.shields.io/badge/licen%C3%A7a-MIT-3E4FB0?style=for-the-badge" alt="Licença MIT"></a>
   <a href="https://github.com/brunocmattos/subquest/stargazers"><img src="https://img.shields.io/github/stars/brunocmattos/subquest?style=for-the-badge&color=E0B040" alt="Estrelas no GitHub"></a>
   <img src="https://img.shields.io/badge/Claude_Code-plugin-D97757?style=for-the-badge" alt="Plugin do Claude Code">
@@ -172,7 +172,7 @@ O mapa diz onde as folhas estão (`source`, buscada em subpastas, relativa a ond
   <sub>Personagens personalizados na imagem: <a href="https://zerie.itch.io/tiny-rpg-character-asset-pack"><em>Tiny RPG Character Asset Pack</em>, de Zerie</a> (pago, não incluído)</sub>
 </p>
 
-Um criador de sprites vem aí.
+Um criador de sprites está planejado: acompanhe, ou diga o que você quer, na [#1](https://github.com/brunocmattos/subquest/issues/1).
 
 ## ❓ Perguntas frequentes
 
@@ -195,7 +195,7 @@ Abre uma sessão nova. Os packs carregam no início da sessão, e o `/reload-plu
 `/subquest lang pt-BR` ou `/subquest lang en`. Por padrão ele segue a configuração `language` do Claude Code, depois o sistema, e por último o inglês.
 
 **Respeita a redução de movimento?**
-Anima mesmo assim, de propósito. A luta *é* a feature.
+Anima por padrão, de propósito: a luta *é* a feature. `/subquest motion off` desenha imagens paradas no lugar e lembra disso entre sessões; `/subquest motion on` traz a luta de volta.
 
 ## 🤝 Contribuindo
 

@@ -2,7 +2,7 @@ import { expect, test } from 'claude-code/testing'
 
 import { cast } from './characters'
 import { FIGHT0, classOf, hit } from './game'
-import { PHASE_H, ROW_H, fmtK, fmtTime, modelLine, historySvg, historyText, phaseSvg, phaseText, rhythm, rowSvg, rowText } from './scene'
+import { PHASE_H, ROW_H, fmtK, fmtTime, lineup, modelLine, historySvg, historyText, phaseSvg, phaseText, rhythm, rowSvg, rowText } from './scene'
 
 const roster = cast([])
 const base = {
@@ -151,6 +151,16 @@ test('the finale: final blow first, the cleared banner after; never on defeat', 
   expect(after).not.toContain('FINAL BLOW!')
   const lost = phaseSvg({ number: 1, ids: ['a'], end: 'defeat', endedAt: 10_000 }, [{ ...base, id: 'a', status: 'failed' }], 356, 10_500, roster, 'en')
   expect(lost).not.toContain('FINAL BLOW!')
+})
+
+test('on victory the last hero to finish takes the front of the line, even past the sixth', () => {
+  const ids = ['a', 'b', 'c', 'd', 'e', 'f', 'g']
+  const rows = ids.map((id, i) => ({ ...base, id, status: 'done' as const, endedAt: i === 6 ? 9_000 : 1_000 + i }))
+  expect(lineup({ number: 1, ids, end: 'victory', endedAt: 9_000 }, rows)).toEqual(['g', 'a', 'b', 'c', 'd', 'e', 'f'])
+  // While the fight goes on, and on defeat, nobody changes place.
+  expect(lineup({ number: 1, ids }, rows)).toEqual(ids)
+  expect(lineup({ number: 1, ids, end: 'defeat' }, rows)).toEqual(ids)
+  expect(lineup({ number: 1, ids: [], end: 'victory' }, [])).toEqual([])
 })
 
 test('the default agent type is hidden from the row; specific ones stay', () => {

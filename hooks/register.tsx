@@ -28,8 +28,9 @@ const openedFor = atom({ plugin: 'subquest', key: 'openedFor' } as const, '')
 
 // Module state: a hot reload runs session.start again and rebuilds both.
 let lang: Lang = 'en'
+let motion = true // `/subquest motion off` draws the still drawings, kept across sessions
 let roster: Roster = cast([])
-let stopTimer: (() => void) | undefined
+let timer: { cancel: () => void } | undefined
 let lastSync = 0
 
 // Every state-changing handler runs here, one after another: each read-modify-write ends before the next starts.
@@ -170,9 +171,15 @@ async function runCommand($: EngineInterface, args: string): Promise<{ text: str
     await $.ui.open({ id: PANE, title: t.paneTitle })
     return { text: t.opened }
   }
-  const pick = words.length === 2 && words[0]?.toLowerCase() === 'lang' ? words[1]?.toLowerCase() : undefined
-  const want: Lang | undefined = pick === 'en' ? 'en' : pick === 'pt-br' ? 'pt-BR' : undefined
-  if (!want) return { text: t.langUsage }
+  const [what, value] = words.length === 2 ? words.map(w => w.toLowerCase()) : []
+  if (what === 'motion' && (value === 'on' || value === 'off')) {
+    await $.store.set('motion', value)
+    motion = value === 'on'
+    $.ui.invalidate('ui.render')
+    return { text: t.motionSet(motion) }
+  }
+  const want: Lang | undefined = what !== 'lang' ? undefined : value === 'en' ? 'en' : value === 'pt-br' ? 'pt-BR' : undefined
+  if (!want) return { text: t.usage }
   await $.store.set('lang', want)
   lang = want
   $.ui.invalidate('ui.render')
@@ -194,15 +201,17 @@ function rowOf(a: AgentRun, t: number): RowData {
     fight: a.fight,
     stats: `ctx ${fmtK(a.contextTokens)} · ${fmtK(a.tokens)} tok${cost} · ${fmtTime((a.endedAt ?? t) - a.startedAt)}`,
     ...(a.fell ? { fell: a.fell } : {}),
+    ...(a.endedAt !== undefined ? { endedAt: a.endedAt } : {}),
   }
 }
 
 export const register: Register = on => {
   on('session.start', async ($, e, next) => {
-    await $.command.register({ name: 'subquest', description: STRINGS.en.commandDescription, argumentHint: '[lang en|pt-BR]' })
-    stopTimer?.() // a hot reload drops the old timer with its environment; a plain second start must not stack one
-    stopTimer = $.clock.every(1000, () => void serial(() => tickWhileRunning($)))
+    await $.command.register({ name: 'subquest', description: STRINGS.en.commandDescription, argumentHint: '[lang en|pt-BR | motion on|off]' })
+    timer?.cancel() // a hot reload drops the old timer with its environment; a plain second start must not stack one
+    timer = $.clock.every(1000, () => void serial(() => tickWhileRunning($)))
     lang = await chooseLang($)
+    motion = (await $.store.get('motion')) !== 'off'
     roster = cast(await loadPacks($))
     $.ui.invalidate('ui.render')
     return next(e)
@@ -210,7 +219,8 @@ export const register: Register = on => {
 
   on('agent.spawn', async ($, e, next) => {
     const r = await next(e)
-    if (r.agentId) await serial(() => onSpawn($, r.agentId, e.subagentType, e.description, r.model))
+    const id = r.agentId
+    if (id) await serial(() => onSpawn($, id, e.subagentType, e.description, r.model))
     return r
   })
 
@@ -303,9 +313,9 @@ export const register: Register = on => {
         </Box>
       )
     }
-    // The drawing, or undefined when even its still one would pass the budget: that one is drawn as text.
+    // The drawing (still with motion off), or undefined when even its still one would pass the budget: that one is drawn as text.
     const fit = (draw: (still: boolean) => string): string | undefined => {
-      let s = draw(false)
+      let s = draw(!motion)
       if (used + s.length > BUDGET) s = draw(true)
       if (used + s.length > BUDGET) return undefined
       used += s.length

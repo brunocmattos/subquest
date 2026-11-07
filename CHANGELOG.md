@@ -1,5 +1,14 @@
 # Changelog
 
+## 1.1.0 — 2026-11-08
+
+- `/subquest motion off` draws still pictures instead of the fight, and remembers it across sessions; `/subquest motion on` brings it back.
+- On victory, the last hero to finish takes the front of the line for the final blow (it could be left out past the sixth).
+- Cost estimates follow the current price list: Haiku 5.5 prompts over 100k tokens pay its long tier, and Opus 4 and 4.1 their own price.
+- The 1 s clock is cancelled the right way when the session starts again.
+- CI runs the manifest check and every test on each push and pull request.
+- The sprite maker is tracked in [#1](https://github.com/brunocmattos/subquest/issues/1).
+
 ## 1.0.0 — 2026-11-07
 
 First release.

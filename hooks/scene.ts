@@ -1,7 +1,7 @@
 // The Subquest scene: the SVG of each row (hero × the monster of its task) and of the field (all × boss).
 // The pane redraws every second while an agent runs, which restarts the CSS; so each drawing is a
 // 1 s turn picked per agent (see `rhythm`): the hero attacks, or the monster strikes back, or both rest.
-// It ignores "reduce motion" on purpose: the animation is the point of the mod.
+// It animates by default on purpose (the animation is the point of the mod); `/subquest motion off` asks for the still drawings.
 import type { AgentStatus, Family, Fight, Phase, PhaseRecord } from '../types'
 import { FINALE_MS, bossHp, bossOf, colorOf, counter, damage, levelOf, monsterHp, seed } from './game'
 import type { Level, Style } from './game'
@@ -20,6 +20,8 @@ export type RowData = {
   stats: string
   /** When and from which family the previous monster fell (its death plays for 1 s). */
   fell?: { family: Family; at: number }
+  /** When the agent finished: on victory the last one takes the front of the line at the boss. */
+  endedAt?: number
 }
 
 const FONT = "system-ui,-apple-system,'Segoe UI',sans-serif"
@@ -307,6 +309,15 @@ export function rowText(a: RowData, roster: Roster, lang: Lang): string {
 
 // --- the phase's field (top of the pane)
 
+// Who stands at the boss, nearest first: spawn order, but on victory the last to finish takes the front
+// (the final blow is theirs, and the line shows only six).
+export function lineup(p: Phase, rows: readonly RowData[]): string[] {
+  const row = (id: string) => rows.find(a => a.id === id)
+  const finished = p.ids.filter(id => row(id)?.status !== 'running')
+  const last = finished.reduce<string | undefined>((b, id) => (b === undefined || (row(id)?.endedAt ?? 0) > (row(b)?.endedAt ?? 0) ? id : b), undefined)
+  return p.end === 'victory' && last !== undefined ? [last, ...finished.filter(id => id !== last)] : finished
+}
+
 const subtitle = (p: Phase): string => (p.title ? `${p.title}${p.ids.length > 1 ? ` +${p.ids.length - 1}` : ''}` : '')
 
 export const PHASE_H = 300
@@ -345,7 +356,7 @@ export function phaseSvg(p: Phase, rows: RowData[], W: number, now: number, rost
   b += `<rect x="0" y="${floor + 4}" width="${W}" height="1.5" fill="#9DBB84" opacity=".8"/>`
 
   // Each hero at the boss has its own parity and offset; the boss strikes back (once) only if someone isn't attacking.
-  const shown = finished.slice(0, 6)
+  const shown = lineup(p, rows).slice(0, 6)
   const live = shown.filter(id => status(id) !== 'failed')
   const attacks = (id: string) => fin || rhythm(id, now).turn === 0
   const atk = live.filter(attacks)

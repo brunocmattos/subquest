@@ -14,7 +14,7 @@
 </p>
 
 <p align="center">
-  <img src="https://img.shields.io/badge/version-1.0.0-D97757?style=for-the-badge" alt="Version 1.0.0">
+  <img src="https://img.shields.io/badge/version-1.1.0-D97757?style=for-the-badge" alt="Version 1.1.0">
   <a href="LICENSE"><img src="https://img.shields.io/badge/license-MIT-3E4FB0?style=for-the-badge" alt="License MIT"></a>
   <a href="https://github.com/brunocmattos/subquest/stargazers"><img src="https://img.shields.io/github/stars/brunocmattos/subquest?style=for-the-badge&color=E0B040" alt="GitHub stars"></a>
   <img src="https://img.shields.io/badge/Claude_Code-plugin-D97757?style=for-the-badge" alt="Claude Code plugin">
@@ -168,7 +168,7 @@ The map says where the sheets live (`source`, searched recursively, relative to 
   <sub>Custom characters shown: <a href="https://zerie.itch.io/tiny-rpg-character-asset-pack"><em>Tiny RPG Character Asset Pack</em> by Zerie</a> (paid, not included)</sub>
 </p>
 
-A sprite maker is coming soon.
+A sprite maker is planned: follow it, or tell us what you'd like, in [#1](https://github.com/brunocmattos/subquest/issues/1).
 
 ## ❓ FAQ
 
@@ -191,7 +191,7 @@ Start a new session. Packs load at session start, and `/reload-plugins` only rel
 `/subquest lang pt-BR` or `/subquest lang en`. By default it follows your Claude Code `language` setting, then your system, then English.
 
 **Does it respect reduced motion?**
-It animates anyway, on purpose. The fight *is* the feature.
+It animates by default, on purpose: the fight *is* the feature. `/subquest motion off` draws still pictures instead and remembers it across sessions; `/subquest motion on` brings the fight back.
 
 ## 🤝 Contributing
 

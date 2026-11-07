@@ -1,6 +1,10 @@
 import { expect, mock, test } from 'claude-code/testing'
+import type { TestBody } from 'claude-code/testing'
 
 import type { AgentRun, Phase, PhaseRecord } from '../types'
+
+// The test runtime has it; the engine's types (no DOM, no Node) do not declare it.
+declare const setTimeout: (fn: (v?: unknown) => void, ms: number) => unknown
 
 test('subagent tools become hits and waves; the end closes the fight, the phase and its record', async ($, on) => {
   // What the mod writes to its state, read on the way to the kit's bottom.
@@ -23,8 +27,8 @@ test('subagent tools become hits and waves; the end closes the fight, the phase 
   on('tool.call', () => ({ result: {} }))
   on('turn.complete', () => ({ text: '' }))
 
-  await $.agent.spawn({ prompt: 'x', description: 'Map callers', subagentType: 'general-purpose' })
-  await $.agent.spawn({ prompt: 'y', description: 'Fix login', subagentType: 'general-purpose' })
+  await $.agent.spawn({ prompt: 'x', description: 'Map callers', subagentType: 'general-purpose' } as never)
+  await $.agent.spawn({ prompt: 'y', description: 'Fix login', subagentType: 'general-purpose' } as never)
   expect(phase()).toEqual({ number: 1, ids: ['a1', 'a2'], title: 'Map callers' })
   await $.tool.call({ tool: 'Read', file_path: '/x', agentId: 'a1' } as never)
   await $.tool.call({ tool: 'Grep', pattern: 'x', agentId: 'a1' } as never)
@@ -45,7 +49,7 @@ test('subagent tools become hits and waves; the end closes the fight, the phase 
   expect(records.map(r => [r.number, r.end])).toEqual([[1, 'defeat']])
 
   // Nobody running: the next subagent opens phase 2, named after its own task.
-  await $.agent.spawn({ prompt: 'z', description: 'Write tests', subagentType: 'general-purpose' })
+  await $.agent.spawn({ prompt: 'z', description: 'Write tests', subagentType: 'general-purpose' } as never)
   expect(phase()).toEqual({ number: 2, ids: ['a3'], title: 'Write tests' })
   expect(opened).toBe(2)
 })
@@ -57,10 +61,10 @@ test('/subquest lang pt-BR stores the language and says so', async ($, on) => {
     stored[e.key] = e.value
     return { value: undefined }
   })
-  const r = await $.command.run({ command: 'subquest', args: 'lang pt-BR' })
+  const r = await $.command.run({ command: 'subquest', args: 'lang pt-BR' } as never)
   expect(stored.lang).toBe('pt-BR')
   expect(r.text).toContain('pt-BR')
-  const bad = await $.command.run({ command: 'subquest', args: 'lang fr' })
+  const bad = await $.command.run({ command: 'subquest', args: 'lang fr' } as never)
   expect(bad.text).toContain('/subquest lang')
 })
 
@@ -82,7 +86,7 @@ test('the pane draws the current phase on every surface, and the tabs switch', a
   expect((await empty.find({ type: 'Text', text: /No subagents/ }))?.text).toBeDefined()
   await empty.unmount()
 
-  await $.agent.spawn({ prompt: 'x', description: 'Map callers', subagentType: 'Explore' })
+  await $.agent.spawn({ prompt: 'x', description: 'Map callers', subagentType: 'Explore' } as never)
   await $.tool.call({ tool: 'Read', file_path: '/x', agentId: 'a1' } as never)
 
   const term = await $.ui.mount({ ...PANE, surface: 'terminal' })
@@ -107,7 +111,7 @@ test('the pane draws the current phase on every surface, and the tabs switch', a
 })
 
 // A kit session with the mod's state recorded and the engine calls it makes answered.
-const world = (on: Parameters<Parameters<typeof test>[1]>[1], slow = false) => {
+const world = (on: Parameters<TestBody>[1], slow = false) => {
   const saved: Record<string, unknown> = {}
   const writes: string[] = []
   on('state.set', async (_$, e, next) => {
@@ -126,7 +130,7 @@ const world = (on: Parameters<Parameters<typeof test>[1]>[1], slow = false) => {
   on('turn.complete', () => ({ text: '' }))
   return { ids, saved, writes, clock, agents: () => (saved.agents as AgentRun[] | undefined) ?? [], phase: () => saved.phase as Phase | null | undefined }
 }
-const spawn = ($: Parameters<Parameters<typeof test>[1]>[0], d: string) => $.agent.spawn({ prompt: 'x', description: d, subagentType: 'general-purpose' })
+const spawn = ($: Parameters<TestBody>[0], d: string) => $.agent.spawn({ prompt: 'x', description: d, subagentType: 'general-purpose' } as never)
 
 test('a resumed agent goes on with its fight and its phase; a second finish changes nothing', async ($, on) => {
   const w = world(on)
@@ -205,4 +209,32 @@ test('ending a phase stamps endedAt and keeps redrawing through the finale', asy
   // 500 ms steps through the 2.5 s finale (plus the 1.2 s tick and the last one)
   expect(w.writes.filter(k => k === 'now').length - atEnd).toBeGreaterThanOrEqual(6)
   expect(w.phase()?.endedAt).toBe(1000)
+})
+
+test('/subquest motion off draws the still pane and remembers it; on brings the fight back', async ($, on) => {
+  world(on)
+  const stored: Record<string, unknown> = {}
+  on('store.set', (_$, e) => {
+    stored[e.key] = e.value
+    return { value: undefined }
+  })
+  await spawn($, 'one')
+  await $.tool.call({ tool: 'Read', file_path: '/x', agentId: 'a1' } as never)
+  // Whether any drawing animates (the `bob` keyframes are always in the style, used or not).
+  const moving = async () => {
+    const ui = await $.ui.mount({ ...PANE, surface: 'desktop' })
+    const svgs = await ui.findAll({ type: 'Svg' })
+    await ui.unmount()
+    expect(svgs.length).toBeGreaterThan(0)
+    return svgs.some(s => /@keyframes (?!bob)/.test(String(s.props.source)))
+  }
+  expect(await moving()).toBe(true)
+  const off = await $.command.run({ command: 'subquest', args: 'motion off' } as never)
+  expect(stored.motion).toBe('off')
+  expect(off.text).toContain('off')
+  expect(await moving()).toBe(false)
+  await $.command.run({ command: 'subquest', args: 'motion on' } as never)
+  expect(stored.motion).toBe('on')
+  expect(await moving()).toBe(true)
+  expect((await $.command.run({ command: 'subquest', args: 'motion maybe' } as never)).text).toContain('/subquest motion')
 })
