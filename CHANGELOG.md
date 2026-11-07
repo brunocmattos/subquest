@@ -1,6 +1,6 @@
 # Changelog
 
-## 1.1.0 — 2026-11-08
+## 1.1.0 — 2026-11-07
 
 - `/subquest motion off` draws still pictures instead of the fight, and remembers it across sessions; `/subquest motion on` brings it back.
 - On victory, the last hero to finish takes the front of the line for the final blow (it could be left out past the sixth).

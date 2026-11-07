@@ -9,7 +9,7 @@ export type Usage = {
 // `long` = the prices of a request whose prompt (input + cache read + cache write) passes `at` tokens.
 type Price = { input: number; output: number; read?: number; long?: { at: number; input: number; output: number } }
 
-// From https://platform.claude.com/docs/en/about-claude/pricing (checked 2026-11-08). First match wins.
+// From https://platform.claude.com/docs/en/about-claude/pricing (checked 2026-11-07). First match wins.
 // shortcut: 5-minute cache writes (1.25x) are not modeled, all writes count as 1-hour ones; revisit if estimates drift from the bill.
 const PRICES: readonly [RegExp, Price][] = [
   [/(fable|mythos)-5-1/, { input: 10, output: 50, read: 0.025 }],
