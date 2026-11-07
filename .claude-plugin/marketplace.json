@@ -1,0 +1,6 @@
+{
+  "name": "subquest",
+  "owner": { "name": "Bruno Campos de Mattos" },
+  "metadata": { "description": "Subquest: your Claude Code subagents as a pixel-art RPG party." },
+  "plugins": [{ "name": "subquest", "source": "./", "description": "Subagents become heroes, tools summon monsters, every wave faces a boss. A live RPG pane at zero tokens." }]
+}

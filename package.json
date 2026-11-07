@@ -1,0 +1,13 @@
+{
+  "name": "subquest-dev",
+  "private": true,
+  "type": "module",
+  "description": "Dev tooling only (README assets). The mod itself has no dependencies.",
+  "scripts": {
+    "assets": "node --experimental-strip-types scripts/assets/render.mts"
+  },
+  "devDependencies": {
+    "gifenc": "^1.0.3",
+    "playwright": "^1.65.0"
+  }
+}

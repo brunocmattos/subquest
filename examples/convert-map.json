@@ -1,0 +1,45 @@
+{
+  "source": "./my-sprites",
+  "frame": 32,
+  "skip": ["unused", "with shadows"],
+  "characters": [
+    {
+      "key": "paladin",
+      "kind": "hero",
+      "style": "melee",
+      "name": { "en": "Paladin", "pt-BR": "Paladino" },
+      "files": {
+        "idle": "Paladin_Idle.png",
+        "attack": ["Paladin_Attack01.png", "Paladin_Attack.png"],
+        "hurt": "Paladin_Hurt.png",
+        "death": "Paladin_Death.png"
+      }
+    },
+    {
+      "key": "mimic",
+      "kind": "monster",
+      "family": "edit",
+      "mirror": true,
+      "name": { "en": "Mimic", "pt-BR": "Mímico" },
+      "files": {
+        "idle": "Mimic_Idle.png",
+        "attack": "Mimic_Attack.png",
+        "hurt": "Mimic_Hurt.png",
+        "death": "Mimic_Death.png"
+      }
+    },
+    {
+      "key": "lich",
+      "kind": "boss",
+      "size": "big",
+      "mirror": true,
+      "name": { "en": "Lich King", "pt-BR": "Rei Lich" },
+      "files": {
+        "idle": "Lich_Idle.png",
+        "attack": "Lich_Attack.png",
+        "hurt": "Lich_Hurt.png",
+        "death": "Lich_Death.png"
+      }
+    }
+  ]
+}

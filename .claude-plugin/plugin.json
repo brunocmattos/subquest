@@ -1,0 +1,11 @@
+{
+  "name": "subquest",
+  "version": "1.0.0",
+  "description": "Your subagents as a pixel-art RPG party in a live side pane: each one fights the monster of the tool it is using, every wave faces a boss. Zero tokens.",
+  "author": { "name": "Bruno Campos de Mattos" },
+  "homepage": "https://github.com/brunocmattos/subquest",
+  "repository": "https://github.com/brunocmattos/subquest",
+  "license": "MIT",
+  "icon": "./docs/assets/icon.png",
+  "types": "./types/index.d.ts"
+}

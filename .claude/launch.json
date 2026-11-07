@@ -1,0 +1,6 @@
+{
+  "version": "0.0.1",
+  "configurations": [
+    { "name": "gallery", "runtimeExecutable": "npx", "runtimeArgs": ["--yes", "http-server", "docs", "-p", "4321", "-c-1"], "port": 4321 }
+  ]
+}
