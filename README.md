@@ -168,7 +168,7 @@ The map says where the sheets live (`source`, searched recursively, relative to 
   <sub>Custom characters shown: <a href="https://zerie.itch.io/tiny-rpg-character-asset-pack"><em>Tiny RPG Character Asset Pack</em> by Zerie</a> (paid, not included)</sub>
 </p>
 
-A sprite maker is planned: follow it, or tell us what you'd like, in [#1](https://github.com/brunocmattos/subquest/issues/1).
+**No sprites yet?** Draw and animate them in [Aseprite](https://www.aseprite.org/) or [PixelLab](https://www.pixellab.ai/), export each animation as a sheet, and run the converter above.
 
 ## ❓ FAQ
 

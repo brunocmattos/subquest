@@ -172,7 +172,7 @@ O mapa diz onde as folhas estão (`source`, buscada em subpastas, relativa a ond
   <sub>Personagens personalizados na imagem: <a href="https://zerie.itch.io/tiny-rpg-character-asset-pack"><em>Tiny RPG Character Asset Pack</em>, de Zerie</a> (pago, não incluído)</sub>
 </p>
 
-Um criador de sprites está planejado: acompanhe, ou diga o que você quer, na [#1](https://github.com/brunocmattos/subquest/issues/1).
+**Ainda não tem sprites?** Desenhe e anime no [Aseprite](https://www.aseprite.org/) ou no [PixelLab](https://www.pixellab.ai/), exporte cada animação como uma folha e rode o conversor aí de cima.
 
 ## ❓ Perguntas frequentes
 
