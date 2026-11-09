@@ -313,22 +313,30 @@ export const register: Register = on => {
         </Box>
       )
     }
-    // The drawing (still with motion off), or undefined when even its still one would pass the budget: that one is drawn as text.
-    const fit = (draw: (still: boolean) => string): string | undefined => {
-      let s = draw(!motion)
-      if (used + s.length > BUDGET) s = draw(true)
+    // The field, then each row: animated only if the still drawings of those after it still fit, so the last
+    // rows go still before any goes to text; undefined (text) only when even its still one would pass the budget.
+    const draws = [
+      (still: boolean) => phaseSvg(ph, rows, W, clock, roster, lang, still),
+      ...rows.map(r => (still: boolean) => rowSvg(r, W, clock, roster, lang, still)),
+    ]
+    const stills = draws.map(d => d(true))
+    let reserve = stills.reduce((n, s) => n + s.length, 0)
+    const svgs = draws.map((draw, i) => {
+      const still = stills[i] ?? ''
+      reserve -= still.length
+      let s = motion ? draw(false) : still
+      if (used + s.length + reserve > BUDGET) s = still
       if (used + s.length > BUDGET) return undefined
       used += s.length
       return s
-    }
-    const field = fit(still => phaseSvg(ph, rows, W, clock, roster, lang, still))
+    })
     const lines = phaseText(ph, rows, roster, lang)
     return (
       <Box flexDirection="column">
         {tabs}
-        {field ? <Svg source={field} alt={lines[0] ?? ''} /> : <Text>{lines[0] ?? ''}</Text>}
+        {svgs[0] ? <Svg source={svgs[0]} alt={lines[0] ?? ''} /> : <Text>{lines[0] ?? ''}</Text>}
         {rows.map((r, i) => {
-          const s = fit(still => rowSvg(r, W, clock, roster, lang, still))
+          const s = svgs[i + 1]
           const line = lines[i + 1] ?? rowText(r, roster, lang)
           return s ? <Svg source={s} alt={line} /> : <Text>{line}</Text>
         })}

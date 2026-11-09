@@ -211,6 +211,25 @@ test('ending a phase stamps endedAt and keeps redrawing through the finale', asy
   expect(w.phase()?.endedAt).toBe(1000)
 })
 
+test('past the budget, the last rows are drawn still instead of falling back to text', async ($, on) => {
+  world(on)
+  // Enough fighters that all of them animated would pass the budget, but all still would not.
+  const n = 20
+  for (let i = 1; i <= n; i++) {
+    await spawn($, `task ${i}`)
+    await $.tool.call({ tool: 'Read', file_path: '/x', agentId: `a${i}` } as never)
+  }
+  const ui = await $.ui.mount({ ...PANE, surface: 'desktop' })
+  const svgs = await ui.findAll({ type: 'Svg' })
+  const texts = await ui.findAll({ type: 'Text', text: /^⚔/ })
+  await ui.unmount()
+  expect(texts.length).toBe(0)
+  expect(svgs.length).toBe(n + 1)
+  expect(svgs.reduce((t, s) => t + String(s.props.source).length, 0)).toBeLessThanOrEqual(180_000)
+  // the first ones still fight
+  expect(svgs.some(s => /@keyframes (?!bob)/.test(String(s.props.source)))).toBe(true)
+})
+
 test('/subquest motion off draws the still pane and remembers it; on brings the fight back', async ($, on) => {
   world(on)
   const stored: Record<string, unknown> = {}
