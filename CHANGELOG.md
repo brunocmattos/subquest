@@ -1,5 +1,9 @@
 # Changelog
 
+## 1.1.1 — 2026-11-09
+
+- With large custom characters and many agents, the last row of the Battle tab no longer turns into a line of text: past the pane's size budget the last rows are drawn still instead.
+
 ## 1.1.0 — 2026-11-07
 
 - `/subquest motion off` draws still pictures instead of the fight, and remembers it across sessions; `/subquest motion on` brings it back.
