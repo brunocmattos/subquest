@@ -14,7 +14,7 @@
 </p>
 
 <p align="center">
-  <img src="https://img.shields.io/badge/version-1.1.1-D97757?style=for-the-badge" alt="Version 1.1.1">
+  <img src="https://img.shields.io/badge/version-1.1.2-D97757?style=for-the-badge" alt="Version 1.1.2">
   <a href="LICENSE"><img src="https://img.shields.io/badge/license-MIT-3E4FB0?style=for-the-badge" alt="License MIT"></a>
   <a href="https://github.com/brunocmattos/subquest/stargazers"><img src="https://img.shields.io/github/stars/brunocmattos/subquest?style=for-the-badge&color=E0B040" alt="GitHub stars"></a>
   <img src="https://img.shields.io/badge/Claude_Code-plugin-D97757?style=for-the-badge" alt="Claude Code plugin">

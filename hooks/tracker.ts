@@ -48,12 +48,13 @@ export const completed = (list: readonly AgentRun[], id: string, reason: EndReas
     return { ...counted, status: 'done', endedAt: now, fight: finish(a.fight), ...(fell ? { fell } : {}) }
   })
 
-// Our running agents the engine no longer runs: closed by how it ended (anything but `completed` is an error).
+// Our running agents the engine no longer runs: closed by how it ended. Failed and killed are errors; an agent
+// gone from the list ended well (the engine drops it ~30 s after it ends, and a failure arrives as turn.complete).
 export const staleRuns = (list: readonly AgentRun[], info: readonly { id: string; status: string }[]): { id: string; reason: EndReason }[] =>
   list.flatMap(a => {
     if (a.status !== 'running') return []
     const s = info.find(i => i.id === a.id)?.status
-    return !s || s === 'completed' || s === 'failed' || s === 'killed' ? [{ id: a.id, reason: (s === 'completed' ? 'answer' : 'error') as EndReason }] : []
+    return !s || s === 'completed' || s === 'failed' || s === 'killed' ? [{ id: a.id, reason: (s === 'failed' || s === 'killed' ? 'error' : 'answer') as EndReason }] : []
   })
 
 // A finished phase as the history tab keeps it; undefined while it still runs.

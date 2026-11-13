@@ -1,5 +1,11 @@
 # Changelog
 
+## 1.1.2 — 2026-11-13
+
+- Tokens are counted as new work only (input, cache writes and output). Every step of an agent re-reads its whole context from the cache, and counting those reads each time showed about three times the real total, more the longer the agent ran.
+- An agent that answers while the engine says it waits on its own background work (a long test run, say) stays in the fight. Its phase no longer closes as a victory and reopens at every wake-up: it ends when the engine lists it `completed`.
+- An agent the engine no longer lists counts as finished, not as an error. A failure, an interruption or a kill still ends it, and its phase, as a defeat.
+
 ## 1.1.1 — 2026-11-09
 
 - With large custom characters and many agents, the last row of the Battle tab no longer turns into a line of text: past the pane's size budget the last rows are drawn still instead.

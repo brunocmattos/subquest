@@ -39,5 +39,6 @@ test('unknown model costs 0 (shown as no estimate)', async () => {
 
 test('context and tokens', async () => {
   expect(contextOf({ ...u, output_tokens: 5 })).toBe(3_000_000)
-  expect(tokensOf(u)).toBe(4_000_000)
+  // New work only: a cache read is the same context again, so it is not counted at every step.
+  expect(tokensOf(u)).toBe(3_000_000)
 })

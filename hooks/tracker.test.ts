@@ -50,7 +50,7 @@ test('staleRuns: running agents the engine forgot or ended are closed, by how th
     { id: 'a2', reason: 'answer' },
     { id: 'a3', reason: 'error' },
     { id: 'a4', reason: 'error' },
-    { id: 'a7', reason: 'error' },
+    { id: 'a7', reason: 'answer' }, // gone from the list: a failure would have come through turn.complete
   ])
 })
 
@@ -65,12 +65,24 @@ test('tool use hits; a new family marks the fallen monster', async () => {
   expect(toolUsed(l, 'zz', 'Read', 30)).toBe(l)
 })
 
-test('each request adds tokens and cost; context is the last request', async () => {
+test('each request adds its new tokens and its cost; context is the last request', async () => {
   let l = stepped([base()], 'a1', use, 'claude-haiku-5-5')
   l = stepped(l, 'a1', { ...use, cache_read_input_tokens: 2000 }, 'claude-haiku-5-5')
   expect(l[0]?.contextTokens).toBe(2150)
-  expect(l[0]?.tokens).toBe(1170 + 2170)
+  expect(l[0]?.tokens).toBe(170 + 170)
   expect(l[0]?.model).toBe('claude-haiku-5-5')
+})
+
+test('a long run is not counted again at every step: the total stays near the final context', async () => {
+  // The three requests of a real Haiku subagent: the cache holds the context, each step re-reads it.
+  const reqs = [
+    { input_tokens: 2, output_tokens: 300, cache_read_input_tokens: 0, cache_creation_input_tokens: 86275 },
+    { input_tokens: 2, output_tokens: 195, cache_read_input_tokens: 86275, cache_creation_input_tokens: 12809 },
+    { input_tokens: 2, output_tokens: 4, cache_read_input_tokens: 99084, cache_creation_input_tokens: 208 },
+  ]
+  const l = reqs.reduce((acc, r) => stepped(acc, 'a1', r, 'claude-haiku-5-5'), [base()])
+  expect(l[0]?.contextTokens).toBe(99294)
+  expect(l[0]?.tokens).toBe(99797) // the engine reports 99314 for this agent; counting the re-reads gave 285156
 })
 
 test('complete: answer is done with the final blow; error and abort fail', async () => {
@@ -86,9 +98,9 @@ test('complete: answer is done with the final blow; error and abort fail', async
 
 test('complete uses the turn usage only when no request was seen', async () => {
   const l = completed([base()], 'a1', 'answer', 5, use)
-  expect(l[0]?.tokens).toBe(1170)
+  expect(l[0]?.tokens).toBe(170)
   const seen = stepped([base()], 'a1', use, 'claude-haiku-5-5')
-  expect(completed(seen, 'a1', 'answer', 5, use)[0]?.tokens).toBe(1170)
+  expect(completed(seen, 'a1', 'answer', 5, use)[0]?.tokens).toBe(170)
 })
 
 test('does not mutate frozen engine values', async () => {

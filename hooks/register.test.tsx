@@ -7,6 +7,7 @@ import type { AgentRun, Phase, PhaseRecord } from '../types'
 declare const setTimeout: (fn: (v?: unknown) => void, ms: number) => unknown
 
 test('subagent tools become hits and waves; the end closes the fight, the phase and its record', async ($, on) => {
+  on('agent.list', () => ({ value: [] }) as never)
   // What the mod writes to its state, read on the way to the kit's bottom.
   const saved: Record<string, unknown> = {}
   on('state.set', (_$, e, next) => {
@@ -16,7 +17,7 @@ test('subagent tools become hits and waves; the end closes the fight, the phase 
   })
   const agents = () => (saved.agents as AgentRun[] | undefined) ?? []
   const phase = () => saved.phase as Phase | null | undefined
-  mock.clock(on, { now: 1000 })
+  const clock = mock.clock(on, { now: 1000 })
   let opened = 0
   on('ui.open', () => {
     opened++
@@ -40,6 +41,7 @@ test('subagent tools become hits and waves; the end closes the fight, the phase 
   expect(agents().find(a => a.id === 'a2')?.fight).toEqual({ wave: 0, hits: 0, won: 0 })
 
   await $.turn.complete({ agentId: 'a1', reason: 'answer', answer: 'ok' } as never)
+  await clock.advance(1000)
   expect(agents().find(a => a.id === 'a1')?.fight.won).toBe(2)
   expect(phase()?.end).toBeUndefined()
 
@@ -76,7 +78,8 @@ const PANE = {
 } as const
 
 test('the pane draws the current phase on every surface, and the tabs switch', async ($, on) => {
-  mock.clock(on, { now: 1000 })
+  const clock = mock.clock(on, { now: 1000 })
+  on('agent.list', () => ({ value: [] }) as never)
   on('ui.open', () => ({ value: { isPlaced: true } }))
   on('agent.spawn', () => ({ model: 'claude-haiku-5-5', agentId: 'a1' }))
   on('tool.call', () => ({ result: {} }))
@@ -101,6 +104,7 @@ test('the pane draws the current phase on every surface, and the tabs switch', a
   await desk.unmount()
 
   await $.turn.complete({ agentId: 'a1', reason: 'answer', answer: 'ok' } as never)
+  await clock.advance(1000)
   for (const surface of ['terminal', 'desktop'] as const) {
     const ui = await $.ui.mount({ ...PANE, surface })
     expect((await ui.find({ type: 'Text', text: /Session: 1 phase · 1 victory/ }))?.text).toBeDefined()
@@ -128,7 +132,9 @@ const world = (on: Parameters<TestBody>[1], slow = false) => {
   on('agent.spawn', () => ({ model: 'claude-opus-5-5', agentId: ids.next ?? `a${++n}` }))
   on('tool.call', () => ({ result: {} }))
   on('turn.complete', () => ({ text: '' }))
-  return { ids, saved, writes, clock, agents: () => (saved.agents as AgentRun[] | undefined) ?? [], phase: () => saved.phase as Phase | null | undefined }
+  const list = { value: [] as { id: string; status: string }[] } // what the engine lists; empty = nobody is running
+  on('agent.list', () => ({ value: list.value }) as never)
+  return { ids, saved, writes, clock, list, agents: () => (saved.agents as AgentRun[] | undefined) ?? [], phase: () => saved.phase as Phase | null | undefined }
 }
 const spawn = ($: Parameters<TestBody>[0], d: string) => $.agent.spawn({ prompt: 'x', description: d, subagentType: 'general-purpose' } as never)
 
@@ -137,6 +143,7 @@ test('a resumed agent goes on with its fight and its phase; a second finish chan
   await spawn($, 'Map callers')
   await $.tool.call({ tool: 'Read', file_path: '/x', agentId: 'a1' } as never)
   await $.turn.complete({ agentId: 'a1', reason: 'answer', answer: 'ok' } as never)
+  await w.clock.advance(1000)
   const done = w.agents()[0]
   expect(done?.status).toBe('done')
   const records = (w.saved.history as PhaseRecord[]).length
@@ -158,6 +165,7 @@ test('spawns and finishes that overlap leave one consistent phase', async ($, on
   expect(w.phase()?.ids.slice().sort()).toEqual(['a1', 'a2', 'a3'])
   expect(w.agents().length).toBe(3)
   await Promise.all(['a1', 'a2', 'a3'].map(id => $.turn.complete({ agentId: id, reason: 'answer', answer: 'ok' } as never)))
+  await w.clock.advance(1000)
   expect(w.phase()?.end).toBe('victory')
   expect((w.saved.history as PhaseRecord[]).length).toBe(1)
 })
@@ -173,8 +181,6 @@ test('events of an agent nobody tracks write nothing', async ($, on) => {
 
 test('the 1 s clock closes agents the engine no longer runs, at most every 5 s', async ($, on) => {
   const w = world(on)
-  let info: { id: string; status: string }[] = []
-  on('agent.list', () => ({ value: info }) as never)
   on('command.register', () => ({ value: undefined }) as never)
   on('session.start', () => ({ cwd: '/' }))
   mock.store(on)
@@ -183,17 +189,51 @@ test('the 1 s clock closes agents the engine no longer runs, at most every 5 s',
   await $.session.start({ cwd: '/', surface: null, isInteractive: false })
   await spawn($, 'one')
   await spawn($, 'two')
-  info = [
+  w.list.value = [
     { id: 'a1', status: 'running' },
     { id: 'a2', status: 'running' },
   ]
   await w.clock.advance(6000)
   expect(w.agents().map(a => a.status)).toEqual(['running', 'running'])
-  info = [{ id: 'a1', status: 'completed' }]
+  w.list.value = [
+    { id: 'a1', status: 'completed' },
+    { id: 'a2', status: 'killed' },
+  ]
   await w.clock.advance(6000)
   expect(w.agents().map(a => a.status)).toEqual(['done', 'failed'])
   expect(w.phase()?.end).toBe('defeat')
   expect((w.saved.history as PhaseRecord[]).length).toBe(1)
+})
+
+test('an agent that answers while the engine says it waits on its own background work stays in the fight', async ($, on) => {
+  const w = world(on)
+  w.list.value = [{ id: 'a1', status: 'running' }]
+  await spawn($, 'Run the suite')
+  await $.tool.call({ tool: 'PowerShell', command: 'sleep', agentId: 'a1' } as never)
+  w.list.value = [{ id: 'a1', status: 'waiting' }]
+  await $.turn.complete({ agentId: 'a1', reason: 'answer', answer: 'waiting for the run' } as never)
+  await w.clock.advance(1000)
+  expect(w.agents()[0]?.status).toBe('running')
+  expect(w.phase()?.end).toBeUndefined()
+
+  // The engine wakes it (the same id spawns again) and this time it is over.
+  w.ids.next = 'a1'
+  await spawn($, 'Run the suite again')
+  w.list.value = [{ id: 'a1', status: 'completed' }]
+  await $.turn.complete({ agentId: 'a1', reason: 'answer', answer: 'done' } as never)
+  await w.clock.advance(1000)
+  expect(w.agents()[0]?.status).toBe('done')
+  expect(w.phase()?.end).toBe('victory')
+  expect((w.saved.history as PhaseRecord[]).length).toBe(1)
+})
+
+test('a failure ends the agent at once, whatever the list says', async ($, on) => {
+  const w = world(on)
+  w.list.value = [{ id: 'a1', status: 'waiting' }]
+  await spawn($, 'one')
+  await $.turn.complete({ agentId: 'a1', reason: 'aborted', answer: '' } as never)
+  expect(w.agents()[0]?.status).toBe('failed')
+  expect(w.phase()?.end).toBe('defeat')
 })
 
 test('ending a phase stamps endedAt and keeps redrawing through the finale', async ($, on) => {
@@ -201,14 +241,15 @@ test('ending a phase stamps endedAt and keeps redrawing through the finale', asy
   await spawn($, 'one')
   const before = w.writes.filter(k => k === 'now').length
   await $.turn.complete({ agentId: 'a1', reason: 'answer', answer: 'ok' } as never)
+  await w.clock.advance(1000)
   expect(w.phase()?.end).toBe('victory')
-  expect(w.phase()?.endedAt).toBe(1000)
+  expect(w.phase()?.endedAt).toBe(1700)
   const atEnd = w.writes.filter(k => k === 'now').length
   expect(atEnd).toBeGreaterThan(before)
   await w.clock.advance(3000)
   // 500 ms steps through the 2.5 s finale (plus the 1.2 s tick and the last one)
   expect(w.writes.filter(k => k === 'now').length - atEnd).toBeGreaterThanOrEqual(6)
-  expect(w.phase()?.endedAt).toBe(1000)
+  expect(w.phase()?.endedAt).toBe(1700)
 })
 
 test('past the budget, the last rows are drawn still instead of falling back to text', async ($, on) => {

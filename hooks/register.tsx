@@ -105,6 +105,21 @@ async function tickWhileRunning($: EngineInterface): Promise<void> {
   for (const s of staleRuns(list, info)) await finish($, s.id, s.reason)
 }
 
+// An agent that answered may only be waiting on its own background work: the engine then lists it `waiting`, and
+// wakes it later with the same id. It is over when the list says so (or drops it); a failure ends it at once.
+async function settle($: EngineInterface, id: string, usage: Usage & { model?: string } | undefined): Promise<void> {
+  const run = (await read($, agents)).find(a => a.id === id)
+  if (!run || run.status !== 'running') return
+  let info: Awaited<ReturnType<EngineInterface['agent']['list']>>
+  try {
+    info = await $.agent.list()
+  } catch {
+    return // the 5 s clock asks again
+  }
+  const s = staleRuns([run], info)[0]
+  if (s) await finish($, id, s.reason, usage)
+}
+
 async function tracked($: EngineInterface, id: string): Promise<boolean> {
   return (await read($, agents)).some(a => a.id === id)
 }
@@ -240,7 +255,10 @@ export const register: Register = on => {
 
   on('turn.complete', async ($, e, next) => {
     const id = e.agentId
-    if (id) await serial(() => finish($, id, e.reason, e.usage))
+    if (id && e.reason === 'answer') {
+      const usage = e.usage
+      $.clock.after(700, () => void serial(() => settle($, id, usage)))
+    } else if (id) await serial(() => finish($, id, e.reason, e.usage))
     return next(e)
   })
 

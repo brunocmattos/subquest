@@ -35,4 +35,5 @@ export function costOf(u: Usage, model: string): number {
   return (u.input_tokens * p.input + u.output_tokens * p.output + u.cache_read_input_tokens * p.input * read + u.cache_creation_input_tokens * p.input * CACHE_WRITE) / 1_000_000
 }
 export const contextOf = (u: Usage): number => u.input_tokens + u.cache_read_input_tokens + u.cache_creation_input_tokens
-export const tokensOf = (u: Usage): number => contextOf(u) + u.output_tokens
+// New work only: a cache read is the context again, and every step of an agent re-reads all of it.
+export const tokensOf = (u: Usage): number => u.input_tokens + u.cache_creation_input_tokens + u.output_tokens
